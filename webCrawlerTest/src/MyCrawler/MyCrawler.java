@@ -22,8 +22,11 @@ import edu.uci.ics.crawler4j.crawler.WebCrawler;
 import edu.uci.ics.crawler4j.parser.HtmlParseData;
 import edu.uci.ics.crawler4j.url.WebURL;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import zufangHtmlParser.RentHtmlParser;
 
 /**
  * @author Yasser Ganjisaffar <lastname at gmail dot com>
@@ -41,7 +44,7 @@ public class MyCrawler extends WebCrawler {
 	public boolean shouldVisit(WebURL url) {
 		String href = url.getURL().toLowerCase();
 		//return !FILTERS.matcher(href).matches() && href.startsWith("http://www.ics.uci.edu/");
-		return true;
+		return href.startsWith("http://bj.58.com/zufang/") && !href.contains("bus");
 	}
 
 	/**
@@ -50,31 +53,21 @@ public class MyCrawler extends WebCrawler {
 	 */
 	@Override
 	public void visit(Page page) {
-		int docid = page.getWebURL().getDocid();
 		String url = page.getWebURL().getURL();
-		String domain = page.getWebURL().getDomain();
-		String path = page.getWebURL().getPath();
-		String subDomain = page.getWebURL().getSubDomain();
-		String parentUrl = page.getWebURL().getParentUrl();
-
-		System.out.println("Docid: " + docid);
-		System.out.println("URL: " + url);
-		System.out.println("Domain: '" + domain + "'");
-		System.out.println("Sub-domain: '" + subDomain + "'");
-		System.out.println("Path: '" + path + "'");
-		System.out.println("Parent page: " + parentUrl);
-
-		if (page.getParseData() instanceof HtmlParseData) {
-			HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
-			String text = htmlParseData.getText();
-			String html = htmlParseData.getHtml();
-			List<WebURL> links = htmlParseData.getOutgoingUrls();
-
-			System.out.println("Text length: " + text.length());
-			System.out.println("Html length: " + html.length());
-			System.out.println("Number of outgoing links: " + links.size());
+		System.out.println("Start:" + url);
+		
+		if (page.getParseData() instanceof HtmlParseData && url != "http://bj.58.com/zufang/") {
+			RentHtmlParser p = new RentHtmlParser();
+			String parseResult = "";
+			try {
+				parseResult = p.Parse(url);
+				p.Store(parseResult);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}			
 		}
 
-		System.out.println("=============");
+		System.out.println("End:" + url);
 	}
 }

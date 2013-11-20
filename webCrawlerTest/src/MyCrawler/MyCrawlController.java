@@ -56,19 +56,19 @@ public class MyCrawlController {
 		 * Be polite: Make sure that we don't send more than 1 request per
 		 * second (1000 milliseconds between requests).
 		 */
-		config.setPolitenessDelay(1000);
+		config.setPolitenessDelay(100);
 
 		/*
 		 * You can set the maximum crawl depth here. The default value is -1 for
 		 * unlimited depth
 		 */
-		config.setMaxDepthOfCrawling(2);
+		config.setMaxDepthOfCrawling(4);
 
 		/*
 		 * You can set the maximum number of pages to crawl. The default value
 		 * is -1 for unlimited number of pages
 		 */
-		config.setMaxPagesToFetch(1000);
+		config.setMaxPagesToFetch(1000000);
 
 		/*
 		 * Do you need to set a proxy? If so, you can use:
@@ -102,8 +102,11 @@ public class MyCrawlController {
 		 * which are found in these pages
 		 */
 
-		controller.addSeed("http://bj.58.com/zufang/");
-
+		for (Integer i = 1;i < 100;++i)
+		{
+			controller.addSeed("http://bj.58.com/zufang/pn" + i.toString());
+		}
+		
 		/*
 		 * Start the crawl. This is a blocking operation, meaning that your code
 		 * will reach the line after this only when crawling is finished.
