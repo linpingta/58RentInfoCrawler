@@ -1,0 +1,20 @@
+.rbox{
+    display: block;
+    color: rgb(255,0,0);
+}
+
+.selected_item_common{
+    display: block;
+    list-style: none;
+}
+
+.selected_item_common li{
+    float: left;
+    margin: 10px, 6px, 0px, 0px;
+    overflow: hidden;
+}
+
+.pos_info{
+    display: inline;
+    margin-right: 10px;
+}
