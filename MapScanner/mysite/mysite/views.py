@@ -7,10 +7,11 @@ from django.template import RequestContext
 import MySQLdb
 
 class TableInfo:
-    def __init__(self, child_list_i, key_list_i, name_i):
+    def __init__(self, child_list_i, key_list_i, name_i, index_i):
         self.child_list = child_list_i
         self.key_list = key_list_i
         self.name = name_i
+        self.index = index_i
 
 class TableKeyRelationship:
     '''mapping <table1, table2> with structure table1 join rel_table on key_column
@@ -77,23 +78,55 @@ def _get_link(result):
     return link
 
 def _execute(attr_list,table_relationship):
-    _find_join_path_table_name("mlu_city","mlu_local",table_relationship)
-
+    str_result_init = "mlu_city" + " a1"
+    str_result = _find_join_path_table_name("mlu_city","mlu_detail_local",str_result_init,table_relationship)
+    print str_result
+    print "#################"
+    str_result2 = _find_join_path_table_name("mlu_open_company","mlu_detail_local",str_result,table_relationship)
+    print str_result2
+    
 def _init_table_structure():    
     all_tables = []
     
     child_list = []
     column_list = []
-    local_table = TableInfo(child_list,column_list,'mlu_local')
+    detail_local_table = TableInfo(child_list,column_list,'mlu_detail_local',6)
+    all_tables.append(detail_local_table)
+    
+    service_relationship = TableKeyRelationship(detail_local_table,'service_company_id')
+    child_list = []
+    column_list = []
+    child_list.append(service_relationship)
+    column_list.append('service_company_id')
+    column_list.append('service_company_name')
+    service_company_table = TableInfo(child_list,column_list,'lu_service_company',5)
+    all_tables.append(service_company_table)
+    
+    open_company_relationship = TableKeyRelationship(detail_local_table,'open_company_id')
+    child_list = []
+    column_list = []
+    child_list.append(open_company_relationship)
+    column_list.append('open_company_id')
+    column_list.append('open_company_name')
+    open_company_table = TableInfo(child_list,column_list,'mlu_open_company',4)
+    all_tables.append(open_company_table)
+    
+    local_relationship = TableKeyRelationship(detail_local_table,'local_id')
+    child_list = []
+    column_list = []
+    child_list.append(local_relationship)
+    column_list.append('local_id')
+    column_list.append('local_name')
+    local_table = TableInfo(child_list,column_list,'mlu_local',3)
     all_tables.append(local_table)
     
-    district_relationship = TableKeyRelationship(local_table,'local_id')
+    district_relationship = TableKeyRelationship(local_table,'district_id')
     child_list = []
     column_list = []
     child_list.append(district_relationship)
     column_list.append('district_id')
     column_list.append('district_name')
-    district_table = TableInfo(child_list,column_list,'mlu_district')
+    district_table = TableInfo(child_list,column_list,'mlu_district',2)
     all_tables.append(district_table)
     
     city_relationship = TableKeyRelationship(district_table,'city_id')
@@ -102,7 +135,7 @@ def _init_table_structure():
     child_list.append(city_relationship)
     column_list.append('city_id')
     column_list.append('city_name')
-    city_table = TableInfo(child_list,column_list,'mlu_city')
+    city_table = TableInfo(child_list,column_list,'mlu_city',1)
     all_tables.append(city_table)
 
     return all_tables
@@ -115,7 +148,7 @@ def _find_table(attr_str,all_tables):
                 return table
     return None
 
-def _find_join_path_table_name(table1_name,table2_name,all_tables):
+def _find_join_path_table_name(table1_name,table2_name,str_path,all_tables):
     flag1 = False
     falg2 = False
     for table in all_tables:
@@ -128,15 +161,33 @@ def _find_join_path_table_name(table1_name,table2_name,all_tables):
             flag2 = True
             continue
     result = ""
+    #print str_path, table1.name, table2.name, flag1, flag2
     if flag1 == True and flag2 == True:
-        result = _find_join_path(table1,table2,table1.name + " a0",1)
-    print result
+        result = _find_join_path(table1,table2,str_path)
+    return result
     
-def _find_join_path(table1,table2,str_path,index):
+def _find_join_path(table1,table2,str_path):
+    # table1 already added in join tree
+    flag1 = str_path.find(table1.name) != -1
+    flag2 = str_path.find(table2.name) != -1
+    if flag1 & flag2:
+        return str_path
+
+    # table1 is equal to table2
     if table1 == table2:
         return str_path
+    # table1 doesn't have child and it's not in join tree
+    if len(table1.child_list) == 0:
+        return -1
     
-    for sub_table_rel in table1.child_list:        
-        str_path = str_path + " join " + sub_table_rel.rel_table.name + " a" + str(index) + " on " + "a" + str(index - 1) + "." + sub_table_rel.key_column + " = " + " a" + str(index) + "." + table1.name + "_" + sub_table_rel.key_column
-        return _find_join_path(sub_table_rel.rel_table,table2,str_path,index + 1)   
-            
+    for sub_table_rel in table1.child_list:
+        # str_path doesn't have this table
+        t_index = str_path.find(sub_table_rel.rel_table.name)
+        if t_index == -1:
+            str_path = str_path + " join " + sub_table_rel.rel_table.name + " a" + str(sub_table_rel.rel_table.index) + " on " + "a" + str(table1.index) + "." + sub_table_rel.key_column + " = " + " a" + str(sub_table_rel.rel_table.index) + "." + table1.name + "_" + sub_table_rel.key_column
+            result_mid = _find_join_path(sub_table_rel.rel_table,table2,str_path)
+            if result_mid != -1:
+                return result_mid
+        else:
+            return str_path + " join " + table1.name + " a" + str(table1.index) + " on " + "a" + str(table1.index) + "." + sub_table_rel.key_column + " = " + " a" + str(sub_table_rel.rel_table.index) + "." + table1.name + "_" + sub_table_rel.key_column
+    return -1
