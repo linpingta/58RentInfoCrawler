@@ -17,5 +17,6 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
     url(r'^$','mysite.views.index',name='index'),
-    url(r'^map/(?P<map_id>\d+)$','mysite.views.map',name='map')
+    url(r'^map/(?P<map_id>\d+)$','mysite.views.map',name='map'),
+    url(r'^test_map/$','mysite.views.test_map')
 )

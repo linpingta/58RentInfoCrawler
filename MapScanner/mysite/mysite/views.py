@@ -5,6 +5,8 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.template import RequestContext
 
 import MySQLdb
+import urllib
+import json
 
 class AttrRel:
     def __init__(self,key_i,alias_i,attrname_i,operator_i,filter_ansewer_i):
@@ -31,6 +33,14 @@ class TableKeyRelationship:
 def index(request):
     return HttpResponse('Hello Map')
 
+def test_map(request):
+    #hyperlink = "http://api.map.baidu.com/direction?origin=latlng:34.264642646862,108.95108518068|name:我家&destination=大雁塔&mode=driving&region=西安&output=html"
+    hyperlink = "http://api.map.baidu.com/direction/v1/routematrix?output=json&origins=芳草地西街&destinations=朝阳门&ak=OspflLhgVDoR5P57YP6hlBV7"
+    data_back = urllib.urlopen(hyperlink).read()
+    json_array = json.loads(data_back)
+    print json_array
+    return render_to_response('test_map.html',{'link':hyperlink})
+
 def map(request, map_id):
     # initial table relationship
     table_relationship = _init_table_structure()
@@ -48,8 +58,8 @@ def map(request, map_id):
     # construct info into url
     #hyperlink = ""
     hyperlink = _get_link(result,attr_list)
-    #hyperlink = "http://api.map.baidu.com/staticimage?width=400&height=200&center=北京&markers=百度大厦|116.403874,39.914888&zoom=10&markerStyles=s,A,0xff0000"
-        
+    #hyperlink = "http://api.map.baidu.com/staticimage?width=400&height=200&center=北京&markers=百度大厦|116.403874,39.914888&zoom=10&markerStyles=s,A,0xff0000"    
+    
     #return HttpResponse('Hello ' + map_id)
     return render_to_response('map.html',{'link':hyperlink})
 
