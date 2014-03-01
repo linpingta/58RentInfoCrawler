@@ -12,12 +12,13 @@ public class RentHtmlParserTest {
 	 */
 	public static void main(String[] args) throws IOException {
 		// TODO Auto-generated method stub
-		//System.out.println("Hello Rent");
-		BasicRentHtmlParser p = new FiveEightRentHtmlParser();
+		
+		//BasicRentHtmlParser p = new FiveIFiveJParser();
+		BasicRentHtmlParser p = new HomeLinkRentHtmlParser();
 		p.Print();
 		ArrayList<String> urlList = new ArrayList<String>();
-		urlList.add("http://bj.58.com/zufang/15993457673606x.shtml");
-		//urlList.add("http://bj.58.com/zufang/15591720966274x.shtml");
+		//urlList.add("http://beijing.homelink.com.cn/zufang/BJHD86624833.shtml");
+		urlList.add("http://beijing.homelink.com.cn/zufang/BJCY87025842.shtml");
 		for (String url : urlList){
 			Map parseResult = p.Parse(url);
 			p.Store(parseResult);	

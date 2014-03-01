@@ -9,27 +9,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.regex.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-public class FiveEightRentHtmlParser extends BasicRentHtmlParser {
+public class HomeLinkRentHtmlParser extends BasicRentHtmlParser {
 
-	private HashMap<String,Integer> numberMapping = new HashMap<String,Integer>();
-	
-	public FiveEightRentHtmlParser() {
-		// TODO Auto-generated constructor stub4
-		numberMapping.put("一", 1); numberMapping.put("二", 2); numberMapping.put("三", 3);
-		numberMapping.put("四", 4); numberMapping.put("五", 5); numberMapping.put("六", 6);
-		numberMapping.put("七", 7); numberMapping.put("八", 8); numberMapping.put("九", 9);
-		numberMapping.put("零", 0); 
-	}
-	
 	public void Print(){
-		System.out.println("Run FiveEightRentHtmlParser");
+		System.out.println("Run HomeLinkRentHtmlParser");
 	}
 	
 	public Map<String,String> Parse(String url) throws IOException{
@@ -37,165 +28,92 @@ public class FiveEightRentHtmlParser extends BasicRentHtmlParser {
 		
 		Document doc = Jsoup.connect(url).get();
 		
-		// region info
-		String cityName = "",districtName = "",regionName = "";
-		Element city = doc.select("div.breadCrumb").first();		
-		Elements cityDetailInfos = city.select("span.crb_i");		
-		int count = 0;
-		for (Element e : cityDetailInfos)
+		Element districtPart = doc.select("div.public").get(3);
+		String districtPartStr = districtPart.text();
+		String[] districtPartInfoStr = districtPartStr.split(">");
+		int districtPartSize = districtPartInfoStr.length;
+		for (int i = 0;i < districtPartSize;++i)
 		{
-			if (count == 0)
-				cityName = e.text().replaceAll("租房", "");
-			else if (count == 1)
-				districtName = e.text().replaceAll("租房", "");
-			else if (count == 2)
-				regionName = e.text().replaceAll("租房", "");
-			++count;
-		}		
-		System.out.println(cityName + ":" + districtName + ":" + regionName);
-		aMap.put("city", cityName);
-		aMap.put("district", districtName);
-		aMap.put("local", regionName);
-		
-		Element house = doc.select("div.detailPrimary").first();
-		// price info		
-		int price = Integer.parseInt(house.select("div.su_con").first().select("span.bigpri").text());
-		aMap.put("Price", String.valueOf(price));
-		String payType = house.select("div.su_con").first().text();
-		Pattern p = Pattern.compile("押.付.");
-		Matcher m = p.matcher(payType);
-		if (m.find()){
-			Integer tmpResult = numberMapping.get(m.group().substring(1,2));			
-			aMap.put("loan_num", String.valueOf(tmpResult));
-			tmpResult = numberMapping.get(m.group().substring(3,4));
-			aMap.put("pay_num", String.valueOf(tmpResult));
-		} else{
-			aMap.put("loan_num", "");
-			aMap.put("pay_num", "");
+			//System.out.println(districtPartInfoStr[i]);
+			if (i == 1)
+			{
+				String tmp = districtPartInfoStr[i].substring(0,2);
+				aMap.put("city", tmp);
+			}
+			else if (i == 2)
+			{
+				String tmp = districtPartInfoStr[i].replace("租房", "");
+				aMap.put("district", tmp);
+			}
+			else if (i == 3)
+			{
+				String tmp = districtPartInfoStr[i].replaceAll("租房", "");
+				aMap.put("local", tmp);
+			}
+			else if (i == 4)
+			{
+				String tmp = districtPartInfoStr[i].replaceAll("租房", "");
+				aMap.put("local_detail", tmp);
+			}
 		}
 		
-		//System.out.println(payType);
-		// houseName info		
-		String houseDetailDesc = house.select("div.bigtitle > h1").text();
-		aMap.put("houseDetailDesc", houseDetailDesc);		
-		// size info
-		String houseSize = house.select("div.su_con").get(1).text();
-		Pattern pHouseSize = Pattern.compile(".室");
-		Matcher mHouseSize = pHouseSize.matcher(houseSize);
+		Elements e1 = doc.select(".xtitle");
+		aMap.put("houseDetailDesc",e1.text());
 		
-		String aRoomNum = "", aSpaceNum = "", aWashNum = "";
-		if (mHouseSize.find()){
-			String tmpRoomNum = mHouseSize.group().substring(0,1);
-			aMap.put("room_num",tmpRoomNum);
-			aRoomNum = mHouseSize.group();
-		}else{
-			aMap.put("room_num","");
-		}
-		if (!aRoomNum.isEmpty()){
-			int index = houseSize.indexOf(aRoomNum);
-			houseSize = houseSize.substring(index + aRoomNum.length());
-		}
+		e1 = doc.select("div.jiageman > a");
+		aMap.put("agent_name",e1.text());
 		
-		pHouseSize = Pattern.compile(".厅");
-		mHouseSize = pHouseSize.matcher(houseSize);
-		if (mHouseSize.find()){
-			String tmpSpaceNum = mHouseSize.group().substring(0,1);
-			aMap.put("space_num",tmpSpaceNum);
-			aSpaceNum = mHouseSize.group();
-		}else{
-			aMap.put("space_num","");
-		}
-		if (!aSpaceNum.isEmpty()){
-			int index = houseSize.indexOf(aSpaceNum);
-			houseSize = houseSize.substring(index + aSpaceNum.length());
-		}
+		e1 = doc.select("div.jiageman > label");
+		aMap.put("agent_tel",e1.text());
 		
-		pHouseSize = Pattern.compile(".卫");
-		mHouseSize = pHouseSize.matcher(houseSize);
-		if (mHouseSize.find()){
-			String tmpWashSize = mHouseSize.group().substring(0,1);
-			aMap.put("wash_num",tmpWashSize);
-			aWashNum = mHouseSize.group();			
-		}else{
-			aMap.put("size","");
-			System.out.println("here");
-		}
-		if (!aWashNum.isEmpty()){
-			int index = houseSize.indexOf(aWashNum);
-			houseSize = houseSize.substring(index + aWashNum.length());
-		}
-		System.out.println(houseSize);
+		e1 = doc.select("div.jiashou > ol > li > b");
+		aMap.put("space_num",e1.get(1).text());
 		
-		pHouseSize = Pattern.compile("[0-9]+");
-		mHouseSize = pHouseSize.matcher(houseSize);
-		if (mHouseSize.find()){
-			String tmpSize = mHouseSize.group();			
-			aMap.put("size",tmpSize);			
-			System.out.println(tmpSize);
-		}else{
-			aMap.put("size","");
-			System.out.println("here");
-		}
+		e1 = doc.select("div.jiashou > ol > li > b");
+		aMap.put("room_num",e1.get(0).text());
 		
-		// local detail info
-		String houseDetail = house.select("a[href^=http://bj.58.com/xiaoqu]").first().text();		
-		aMap.put("local_detail", houseDetail);
+		aMap.put("pay_num", "0");
+		aMap.put("loan_num", "0");
+		
+		Element e = doc.select("div.jiashou > ol > li").get(1);
+		aMap.put("direction", e.text().substring(3));
+		
+		e = doc.select("div.jiashou > ol > li").get(3);
+		String s1 = e.text();
+		int index1 = s1.indexOf("/");
+		int index2 = s1.indexOf("年");
+		aMap.put("open_time", s1.substring(index1 + 1, index2)+"-01-01");
+		
+		e = doc.select("div.shoujia > ul > li").get(1);
+		aMap.put("Price", e.text());
+		
+		e1 = doc.select("div.shoujia > ol > li");
+		s1 = e1.text();
+		index1 = s1.indexOf("积");
+		index2 = s1.indexOf("平");
+		aMap.put("size", s1.substring(index1 + 2, index2));
+		
+		e = doc.select("div.jiashou > ol > li").get(2);
+		s1 = e.text();
+		index1 = s1.indexOf("(");
+		index2 = s1.indexOf(")");
+		aMap.put("max_floor", s1.substring(index1 + 1, index2 - 1));
+		int max_floor = Integer.parseInt(s1.substring(index1 + 1, index2 - 1));
+		int cur_floor = -1;
+		if (s1.contains("低") == true)
+			cur_floor = (int)(Math.random() * max_floor / 3);
+		else if (s1.contains("中") == true)
+			cur_floor = (int)((1 + Math.random()) * max_floor / 3);
+		else 
+			cur_floor = (int)((2 + Math.random()) * max_floor / 3);
+		aMap.put("curr_floor", String.valueOf(cur_floor));
+		
+		// Other info	
+		aMap.put("wash_num", "0");
 		aMap.put("greent_rate", "");
-		aMap.put("open_time", "0000-00-00");
-		// direction info
-		String houseDirection = house.select("div.su_con").get(2).text();
-		ArrayList<String> directionList = new ArrayList<String>();
-		directionList.add("南北");
-		directionList.add("东西");
-		directionList.add("南");
-		directionList.add("北");
-		directionList.add("东");
-		directionList.add("西");
-		boolean bHouseDirectionFlag = false;
-		for (String dirWord : directionList){
-			if (houseDirection.contains(dirWord)){
-				houseDirection = dirWord;
-				bHouseDirectionFlag = true;
-				break;
-			}			
-		}
-		if (bHouseDirectionFlag){
-			aMap.put("direction", houseDirection);
-		}else{
-			aMap.put("direction", "");	
-		}		
-		// floor info
-		String tmpFloorInfo = house.select("div.su_con").get(3).text().replaceAll("层","");
-		int index = -1, floor = -1, maxFloor = -1;
-		index = tmpFloorInfo.indexOf("/");
-		if (index != -1){
-			floor = Integer.parseInt(tmpFloorInfo.substring(0, index));
-			maxFloor = Integer.parseInt(tmpFloorInfo.substring(index + 1, tmpFloorInfo.length()));
-		}
-		aMap.put("curr_floor", String.valueOf(floor));
-		aMap.put("max_floor", String.valueOf(maxFloor));
-		
-		// Agent info
-		Elements agentInfoList = doc.select("script");
-		int start = 11; int end = 12;
-		for (int i = start;i < end;++i){
-			Element agentInfo = doc.select("script").get(i);
-			//System.out.println(agentInfo);	
-		}
-		aMap.put("agent_name", "");
-		aMap.put("agent_tel", "");
-		
-		// Other info
-		aMap.put("info_source", "58");
+		aMap.put("info_source", "homelink");
 		aMap.put("open_company", "");
-		aMap.put("service_company", "");
-		
-		aMap.put("url", url);
-		
-//		// Store all info
-//		String allInfo = "'" + houseName + "'," + price + ",'" + houseSize + 
-//		"'," + floor + "," + maxFloor + ",'" + cityName + "','" + districtName + "','" + regionName + "'";
-//		System.out.println(allInfo);
+		aMap.put("service_company", "");		
 		
 		Iterator<Map.Entry<String,String>> iter = aMap.entrySet().iterator();
 		String itemKey = "", itemValue = "";
@@ -219,7 +137,7 @@ public class FiveEightRentHtmlParser extends BasicRentHtmlParser {
 		
 		String url = "jdbc:mysql://127.0.0.1:3306/rent_info";
 		String user = "root";
-		String password = "123456";
+		String password = "feixuluohua";
 		try {
 			Connection conn = DriverManager.getConnection(url,user,password);
 			
@@ -321,15 +239,14 @@ public class FiveEightRentHtmlParser extends BasicRentHtmlParser {
 			sql = "set @local_detail_id = (select DETAIL_LOCAL_ID from mlu_detail_local where DETAIL_LOCAL_NAME='" + aMap.get("local_detail") + "' and MLU_LOCAL_LOCAL_ID=@local_id and MLU_OPEN_COMPANY_OPEN_COMPANY_ID=@open_company_id and LU_SERVICE_COMPANY_SERVICE_COMPANY_ID=@service_company_id);";
 			statement.execute(sql);
 			
-			sql = "insert into house_rent_info(MLU_ROOM_TYPE_ROOM_TYPE_ID,MLU_STAIR_TYPE_STAIR_TYPE_ID,MLU_INFO_SOURCE_INFO_SOURCE_ID,MLU_PAY_TYPE_PAY_TYPE_ID,MLU_DETAIL_LOCAL_DETAIL_LOCAL_ID,HOUSE_RENT_INFO_NAME,DIRECTION_TYPE,RENT_SIZE,RENT_MONEY,HOUSE_DETAIL_DESC,CRAWLER_TIME,url) values(@room_type_id,@stair_type_id,@info_source_id,@pay_type_id,@local_detail_id,'"
-				+ aMap.get("local_detail") + "','" + aMap.get("direction") + "'," + aMap.get("size") + "," + aMap.get("Price") + ",'" + aMap.get("houseDetailDesc") + "', curdate() , '" + aMap.get("url") + "');";
+			sql = "insert into house_rent_info(MLU_ROOM_TYPE_ROOM_TYPE_ID,MLU_STAIR_TYPE_STAIR_TYPE_ID,MLU_INFO_SOURCE_INFO_SOURCE_ID,MLU_PAY_TYPE_PAY_TYPE_ID,MLU_DETAIL_LOCAL_DETAIL_LOCAL_ID,HOUSE_RENT_INFO_NAME,DIRECTION_TYPE,RENT_SIZE,RENT_MONEY,HOUSE_DETAIL_DESC,CRAWLER_TIME) values(@room_type_id,@stair_type_id,@info_source_id,@pay_type_id,@local_detail_id,'"
+				+ aMap.get("local_detail") + "','" + aMap.get("direction") + "'," + aMap.get("size") + "," + aMap.get("Price") + ",'" + aMap.get("houseDetailDesc") + "',curdate());";
 			statement.execute(sql);		
 			
 			System.out.println("Insert Execution End");
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}		
 	}
-
 }
